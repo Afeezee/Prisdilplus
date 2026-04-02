@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLeaderboardStore } from '@/stores/leaderboardStore';
 
@@ -22,10 +22,23 @@ interface LeaderboardScreenProps {
 export default function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
   const { loadFromStorage, getLeaderboard, loaded } = useLeaderboardStore();
   const [activeCategory, setActiveCategory] = useState('points');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
 
   const entries = getLeaderboard(activeCategory);
 
@@ -99,12 +112,29 @@ export default function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
+          {/* Scroll buttons */}
+          <motion.button
+            onClick={scrollLeft}
+            className="absolute left-0 top-0 bottom-0 z-20 px-2 bg-[#0a0a0f]/80 hover:bg-[#0a0a0f] border border-white/10 rounded-l-xl text-white/70 hover:text-white transition-all"
+            whileTap={{ scale: 0.95 }}
+          >
+            ‹
+          </motion.button>
+          <motion.button
+            onClick={scrollRight}
+            className="absolute right-0 top-0 bottom-0 z-20 px-2 bg-[#0a0a0f]/80 hover:bg-[#0a0a0f] border border-white/10 rounded-r-xl text-white/70 hover:text-white transition-all"
+            whileTap={{ scale: 0.95 }}
+          >
+            ›
+          </motion.button>
+          
           {/* Scroll fade indicators */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#0a0a0f] to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#0a0a0f] to-transparent z-10" />
+          <div className="pointer-events-none absolute left-6 top-0 bottom-0 w-6 bg-gradient-to-r from-[#0a0a0f] to-transparent z-10" />
+          <div className="pointer-events-none absolute right-6 top-0 bottom-0 w-6 bg-gradient-to-l from-[#0a0a0f] to-transparent z-10" />
           
           <div
-            className="flex gap-2 overflow-x-auto pb-3 px-2"
+            ref={scrollRef}
+            className="flex gap-2 overflow-x-auto pb-3 px-8"
             style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
