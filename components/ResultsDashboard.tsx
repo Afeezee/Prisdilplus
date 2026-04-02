@@ -27,6 +27,8 @@ export default function ResultsDashboard({ onShowLeaderboard }: ResultsDashboard
     winner,
     rounds,
     mode,
+    strategy,
+    totalRounds: configuredRounds,
     resetGame,
   } = useGameStore();
 
