@@ -1,6 +1,8 @@
 'use client';
 
-export default function PlayerModal({ player, onClose }) {
+import { motion } from 'framer-motion';
+
+export default function PlayerModal({ player, onClose }: { player: any; onClose: any }) {
   if (!player) return null;
 
   return (

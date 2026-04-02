@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import { getAllPlayers } from '@/lib/adminDataUtils';
 
 export default function PlayersTab() {
-  const [players, setPlayers] = useState([]);
-  const [filteredPlayers, setFilteredPlayers] = useState([]);
+  const [players, setPlayers] = useState<any[]>([]);
+  const [filteredPlayers, setFilteredPlayers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'totalPoints', direction: 'desc' });
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
