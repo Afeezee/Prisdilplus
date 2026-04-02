@@ -6,7 +6,8 @@
 import { create } from 'zustand';
 import { PlayerProfile } from '@/lib/types';
 
-const STORAGE_KEY = 'prisdilplusHumanLeaderboard';
+const STORAGE_KEY = 'prisdilplus_human_leaderboard';
+const LEGACY_STORAGE_KEY = 'prisdilplusHumanLeaderboard';
 
 interface LeaderboardState {
   players: Record<string, PlayerProfile>;
@@ -92,10 +93,16 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
   loadFromStorage: () => {
     if (typeof window === 'undefined') return;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      let raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+      }
       if (raw) {
         const parsed = JSON.parse(raw);
         set({ players: parsed, loaded: true });
+        if (raw && localStorage.getItem(STORAGE_KEY) !== raw) {
+          localStorage.setItem(STORAGE_KEY, raw);
+        }
       } else {
         set({ loaded: true });
       }
@@ -108,7 +115,9 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
     if (typeof window === 'undefined') return;
     try {
       const state = get();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.players));
+      const payload = JSON.stringify(state.players);
+      localStorage.setItem(STORAGE_KEY, payload);
+      localStorage.setItem(LEGACY_STORAGE_KEY, payload);
     } catch {
       // ignore
     }
