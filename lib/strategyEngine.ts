@@ -15,8 +15,6 @@ export function getStrategyMove(
   switch (strategy) {
     case 'random':
       return randomStrategy();
-    case 'always_cooperate':
-      return alwaysCooperate();
     case 'always_defect':
       return alwaysDefect();
     case 'tit_for_tat':
@@ -37,11 +35,6 @@ export function getStrategyMove(
 /** P(C) = 0.5, P(D) = 0.5 */
 function randomStrategy(): Move {
   return Math.random() < 0.5 ? 'C' : 'D';
-}
-
-/** Always returns C */
-function alwaysCooperate(): Move {
-  return 'C';
 }
 
 /** Always returns D */
@@ -111,7 +104,6 @@ function pavlov(history: RoundResult[]): Move {
 export function getStrategyDisplayName(strategy: StrategyType): string {
   const names: Record<StrategyType, string> = {
     random: 'Random',
-    always_cooperate: 'Always Cooperate',
     always_defect: 'Always Defect',
     tit_for_tat: 'Tit for Tat',
     forgiving_tit_for_tat: 'Forgiving Tit for Tat',
@@ -126,7 +118,6 @@ export function getStrategyDisplayName(strategy: StrategyType): string {
 export function getStrategyBotAlias(strategy: StrategyType): string {
   const aliases: Record<StrategyType, string> = {
     random: 'RANDOM_BOT',
-    always_cooperate: 'COOPERATE_BOT',
     always_defect: 'DEFECT_BOT',
     tit_for_tat: 'TIT_FOR_TAT_BOT',
     forgiving_tit_for_tat: 'FORGIVING_TFT_BOT',

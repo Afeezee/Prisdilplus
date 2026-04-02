@@ -9,7 +9,6 @@ import { getStrategyDisplayName } from '@/lib/strategyEngine';
 
 const STRATEGIES: StrategyType[] = [
   'random',
-  'always_cooperate',
   'always_defect',
   'tit_for_tat',
   'forgiving_tit_for_tat',
