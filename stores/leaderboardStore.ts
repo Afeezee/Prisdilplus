@@ -1,19 +1,17 @@
 'use client';
 // ============================================================
-// Prisdil+ Leaderboard Store (Zustand + localStorage)
+// Prisdil+ Leaderboard Store (Zustand + PostgreSQL API)
 // ============================================================
 
 import { create } from 'zustand';
 import { PlayerProfile } from '@/lib/types';
-
-const STORAGE_KEY = 'prisdilplus_human_leaderboard';
-const LEGACY_STORAGE_KEY = 'prisdilplusHumanLeaderboard';
+import { useIdentityStore } from './identityStore';
 
 interface LeaderboardState {
   players: Record<string, PlayerProfile>;
   loaded: boolean;
 
-  loadFromStorage: () => void;
+  loadFromStorage: () => Promise<void>;
   saveToStorage: () => void;
 
   getOrCreatePlayer: (alias: string) => PlayerProfile;
@@ -87,22 +85,14 @@ function createEmptyProfile(alias: string): PlayerProfile {
 }
 
 export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
-  players: {},
-  loaded: false,
+  players: {}, loaded: false,
 
-  loadFromStorage: () => {
-    if (typeof window === 'undefined') return;
+  loadFromStorage: async () => {
     try {
-      let raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        raw = localStorage.getItem(LEGACY_STORAGE_KEY);
-      }
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        set({ players: parsed, loaded: true });
-        if (raw && localStorage.getItem(STORAGE_KEY) !== raw) {
-          localStorage.setItem(STORAGE_KEY, raw);
-        }
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      if (data.players) {
+        set({ players: data.players, loaded: true });
       } else {
         set({ loaded: true });
       }
@@ -112,20 +102,11 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
   },
 
   saveToStorage: () => {
-    if (typeof window === 'undefined') return;
-    try {
-      const state = get();
-      const payload = JSON.stringify(state.players);
-      localStorage.setItem(STORAGE_KEY, payload);
-      localStorage.setItem(LEGACY_STORAGE_KEY, payload);
-    } catch {
-      // ignore
-    }
+    // Handled by backend now
   },
 
   getOrCreatePlayer: (alias) => {
     const state = get();
-    // Case-insensitive lookup
     const key = findAliasKey(state.players, alias);
     if (key) return state.players[key];
     const newProfile = createEmptyProfile(alias);
@@ -135,14 +116,11 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
 
   updatePlayerAfterGame: (alias, update) => {
     const state = get();
-    // Case-insensitive lookup to prevent duplicates
     const existingKey = findAliasKey(state.players, alias);
     const resolvedKey = existingKey || alias;
     const existing = state.players[resolvedKey] || createEmptyProfile(alias);
 
-    const newWinStreak = update.won
-      ? existing.currentWinStreak + 1
-      : 0;
+    const newWinStreak = update.won ? existing.currentWinStreak + 1 : 0;
 
     const updatedProfile: PlayerProfile = {
       ...existing,
@@ -171,10 +149,24 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
     const newPlayers = { ...state.players, [resolvedKey]: updatedProfile };
     set({ players: newPlayers });
 
+    // Push to backend if it identifies as the user
+    const currentIdentity = useIdentityStore.getState().identity;
+    let synced = false;
+    if (currentIdentity && currentIdentity.alias.toLowerCase() === resolvedKey.toLowerCase()) {
+      synced = true;
+      fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: currentIdentity.deviceId, update })
+      }).catch(() => console.warn("Failed to sync leaderboard update"));
+    } else {
+      console.warn("Match played by non-logged-in profile or opponent; backend sync skipped.");
+    }
+
     // Award badges after update
     setTimeout(() => {
       get().awardBadges(resolvedKey);
-      get().saveToStorage();
+      if (synced) get().saveToStorage(); // Optional hook point
     }, 0);
   },
 
@@ -182,52 +174,22 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
     const state = get();
     const p = state.players[alias];
     if (!p) return;
-
     const badges: string[] = [];
 
-    // Cooperation Master
-    if (p.totalMoves > 0 && p.totalCooperateMoves / p.totalMoves > 0.7) {
-      badges.push('🤝 Cooperation Master');
-    }
-
-    // Fast Retaliator
-    if (p.totalBetrayalsFaced > 0 && p.totalRetaliations / p.totalBetrayalsFaced > 0.7) {
-      badges.push('⚡ Fast Retaliator');
-    }
-
-    // Most Forgiving
-    if (p.totalRetaliationSequences > 0 && p.totalForgivenessEvents / p.totalRetaliationSequences > 0.5) {
-      badges.push('🕊️ Most Forgiving');
-    }
-
-    // Strategic Genius
+    if (p.totalMoves > 0 && p.totalCooperateMoves / p.totalMoves > 0.7) badges.push('🤝 Cooperation Master');
+    if (p.totalBetrayalsFaced > 0 && p.totalRetaliations / p.totalBetrayalsFaced > 0.7) badges.push('⚡ Fast Retaliator');
+    if (p.totalRetaliationSequences > 0 && p.totalForgivenessEvents / p.totalRetaliationSequences > 0.5) badges.push('🕊️ Most Forgiving');
+    
     const retScore = p.totalBetrayalsFaced > 0 ? p.totalRetaliations / p.totalBetrayalsFaced : 0;
     const forgScore = p.totalRetaliationSequences > 0 ? p.totalForgivenessEvents / p.totalRetaliationSequences : 0;
     const consScore = p.totalRoundsPlayed > 0 ? p.longestStreak / p.totalRoundsPlayed : 0;
     const stratScore = (retScore + forgScore + consScore) / 3;
-    if (stratScore > 0.5) {
-      badges.push('🧠 Strategic Genius');
-    }
-
-    // Opportunist
-    if (p.totalDefections > 0 && p.totalDefectionsAfterOpponentCoop / p.totalDefections > 0.5) {
-      badges.push('🦊 Opportunist');
-    }
-
-    // Top Scorer
-    if (p.totalPoints >= 100) {
-      badges.push('🏆 Top Scorer');
-    }
-
-    // Longest Streak
-    if (p.longestWinStreak >= 5) {
-      badges.push('🔥 Longest Streak');
-    }
-
-    // Defensive Titan
-    if (p.totalMoves > 0 && p.totalDefectMoves / p.totalMoves > 0.6 && retScore > 0.7) {
-      badges.push('🛡️ Defensive Titan');
-    }
+    
+    if (stratScore > 0.5) badges.push('🧠 Strategic Genius');
+    if (p.totalDefections > 0 && p.totalDefectionsAfterOpponentCoop / p.totalDefections > 0.5) badges.push('🦊 Opportunist');
+    if (p.totalPoints >= 100) badges.push('🏆 Top Scorer');
+    if (p.longestWinStreak >= 5) badges.push('🔥 Longest Streak');
+    if (p.totalMoves > 0 && p.totalDefectMoves / p.totalMoves > 0.6 && retScore > 0.7) badges.push('🛡️ Defensive Titan');
 
     const updatedProfile = { ...p, badges };
     set({ players: { ...state.players, [alias]: updatedProfile } });
@@ -245,8 +207,7 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
       const opportunismScore = p.totalDefections > 0 ? p.totalDefectionsAfterOpponentCoop / p.totalDefections : 0;
 
       return {
-        ...p,
-        rank: 0,
+        ...p, rank: 0,
         winRate: Math.round(winRate),
         cooperationRate: Math.round(cooperationRate * 100) / 100,
         retaliationScore: Math.round(retaliationScore * 100) / 100,
@@ -257,34 +218,16 @@ export const useLeaderboardStore = create<LeaderboardState>((set, get) => ({
       };
     });
 
-    // Sort
     switch (sortBy) {
-      case 'points':
-        entries.sort((a, b) => b.totalPoints - a.totalPoints);
-        break;
-      case 'wins':
-        entries.sort((a, b) => b.totalWins - a.totalWins);
-        break;
-      case 'streak':
-        entries.sort((a, b) => b.longestWinStreak - a.longestWinStreak);
-        break;
-      case 'cooperation':
-        entries.sort((a, b) => b.cooperationRate - a.cooperationRate);
-        break;
-      case 'strategic':
-        entries.sort((a, b) => b.strategicScore - a.strategicScore);
-        break;
-      case 'forgiveness':
-        entries.sort((a, b) => b.forgivenessScore - a.forgivenessScore);
-        break;
-      case 'retaliation':
-        entries.sort((a, b) => b.retaliationScore - a.retaliationScore);
-        break;
-      case 'opportunism':
-        entries.sort((a, b) => b.opportunismScore - a.opportunismScore);
-        break;
-      default:
-        entries.sort((a, b) => b.totalPoints - a.totalPoints);
+      case 'points': entries.sort((a, b) => b.totalPoints - a.totalPoints); break;
+      case 'wins': entries.sort((a, b) => b.totalWins - a.totalWins); break;
+      case 'streak': entries.sort((a, b) => b.longestWinStreak - a.longestWinStreak); break;
+      case 'cooperation': entries.sort((a, b) => b.cooperationRate - a.cooperationRate); break;
+      case 'strategic': entries.sort((a, b) => b.strategicScore - a.strategicScore); break;
+      case 'forgiveness': entries.sort((a, b) => b.forgivenessScore - a.forgivenessScore); break;
+      case 'retaliation': entries.sort((a, b) => b.retaliationScore - a.retaliationScore); break;
+      case 'opportunism': entries.sort((a, b) => b.opportunismScore - a.opportunismScore); break;
+      default: entries.sort((a, b) => b.totalPoints - a.totalPoints);
     }
 
     return entries.map((e, i) => ({ ...e, rank: i + 1 }));

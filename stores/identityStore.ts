@@ -5,9 +5,10 @@
 
 import { create } from 'zustand';
 
-const STORAGE_KEY = 'prisdilplus_user_identity';
+const STORAGE_KEY = 'prisdilplus_user_identity_device';
+const LEGACY_STORAGE_KEY = 'prisdilplus_user_identity';
 
-interface UserIdentity {
+export interface UserIdentity {
   alias: string;
   createdAt: string;
   deviceId: string;
@@ -18,9 +19,9 @@ interface IdentityState {
   loaded: boolean;
   showProfilePanel: boolean;
 
-  loadIdentity: () => void;
-  createIdentity: (alias: string) => void;
-  changeAlias: (newAlias: string) => void;
+  loadIdentity: () => Promise<void>;
+  createIdentity: (alias: string) => Promise<void>;
+  changeAlias: (newAlias: string) => Promise<void>;
   getAlias: () => string;
   hasIdentity: () => boolean;
   setShowProfilePanel: (show: boolean) => void;
@@ -39,52 +40,72 @@ function generateUUID(): string {
   }
 }
 
-function readFromStorage(): UserIdentity | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && parsed.alias && parsed.createdAt && parsed.deviceId) {
-      return parsed as UserIdentity;
-    }
-    return null;
-  } catch {
-    console.warn('Prisdil+: Could not read identity from localStorage');
-    return null;
-  }
-}
-
-function writeToStorage(identity: UserIdentity): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(identity));
-  } catch {
-    console.warn('Prisdil+: Could not save identity to localStorage');
-  }
-}
-
 export const useIdentityStore = create<IdentityState>((set, get) => ({
   identity: null,
   loaded: false,
   showProfilePanel: false,
 
-  loadIdentity: () => {
-    const stored = readFromStorage();
-    set({ identity: stored, loaded: true });
+  loadIdentity: async () => {
+    if (typeof window === 'undefined') return;
+    
+    // Migration from old storage key if it exists
+    let deviceId = localStorage.getItem(STORAGE_KEY);
+    if (!deviceId) {
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        try {
+          const parsed = JSON.parse(legacy);
+          if (parsed && parsed.deviceId) {
+            deviceId = parsed.deviceId;
+            localStorage.setItem(STORAGE_KEY, deviceId);
+          }
+        } catch {
+        }
+      }
+    }
+
+    if (!deviceId) {
+      set({ loaded: true });
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/identity?deviceId=${deviceId}`);
+      const data = await res.json();
+      if (data.identity) {
+        set({ identity: data.identity, loaded: true });
+      } else {
+        set({ loaded: true });
+      }
+    } catch {
+      set({ loaded: true });
+    }
   },
 
-  createIdentity: (alias: string) => {
-    const identity: UserIdentity = {
-      alias: alias.trim(),
-      createdAt: new Date().toISOString(),
-      deviceId: generateUUID(),
-    };
-    writeToStorage(identity);
-    set({ identity });
+  createIdentity: async (alias: string) => {
+    const deviceId = generateUUID();
+    localStorage.setItem(STORAGE_KEY, deviceId);
+    
+    // Optimistic lock
+    const newIdentity = { alias: alias.trim(), createdAt: new Date().toISOString(), deviceId };
+    set({ identity: newIdentity });
+
+    try {
+      const res = await fetch('/api/identity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, alias: alias.trim() })
+      });
+      const data = await res.json();
+      if (data.identity) {
+        set({ identity: data.identity });
+      }
+    } catch {
+      console.warn("Failed to save identity online");
+    }
   },
 
-  changeAlias: (newAlias: string) => {
+  changeAlias: async (newAlias: string) => {
     const state = get();
     if (!state.identity) return;
 
@@ -92,8 +113,18 @@ export const useIdentityStore = create<IdentityState>((set, get) => ({
       ...state.identity,
       alias: newAlias.trim(),
     };
-    writeToStorage(updated);
+    
     set({ identity: updated });
+
+    try {
+      await fetch('/api/identity', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: state.identity.deviceId, alias: newAlias.trim() })
+      });
+    } catch {
+      console.warn("Failed to update alias online");
+    }
   },
 
   getAlias: () => {

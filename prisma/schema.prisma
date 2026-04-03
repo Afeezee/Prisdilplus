@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UserIdentity {
+  id        String   @id @default(uuid())
+  deviceId  String   @unique
+  alias     String
+  createdAt DateTime @default(now())
+
+  profile   PlayerProfile?
+}
+
+model PlayerProfile {
+  id                                   String @id @default(uuid())
+  userId                               String @unique
+  user                                 UserIdentity @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  totalPoints                          Int @default(0)
+  totalWins                            Int @default(0)
+  totalLosses                          Int @default(0)
+  totalDraws                           Int @default(0)
+  gamesPlayed                          Int @default(0)
+  totalCooperateMoves                  Int @default(0)
+  totalDefectMoves                     Int @default(0)
+  totalMoves                           Int @default(0)
+  totalRetaliations                    Int @default(0)
+  totalBetrayalsFaced                  Int @default(0)
+  totalForgivenessEvents               Int @default(0)
+  totalRetaliationSequences            Int @default(0)
+  totalDefectionsAfterOpponentCoop     Int @default(0)
+  totalDefections                      Int @default(0)
+  totalCooperationsAfterOpponentDefect Int @default(0)
+  totalOpponentDefections              Int @default(0)
+  longestStreak                        Int @default(0)
+  longestWinStreak                     Int @default(0)
+  currentWinStreak                     Int @default(0)
+  totalRoundsPlayed                    Int @default(0)
+  badges                               String @default("[]")
+}
