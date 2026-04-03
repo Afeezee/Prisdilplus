@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { useIdentityStore } from '@/stores/identityStore';
+import { useRoomStore } from '@/stores/roomStore';
 import { GameMode, StrategyType } from '@/lib/types';
 import { getStrategyDisplayName } from '@/lib/strategyEngine';
 
@@ -21,9 +22,10 @@ const ROUND_OPTIONS = [5, 10, 20];
 
 interface LandingScreenProps {
   onShowLeaderboard: () => void;
+  onEnterLobby: () => void;
 }
 
-export default function LandingScreen({ onShowLeaderboard }: LandingScreenProps) {
+export default function LandingScreen({ onShowLeaderboard, onEnterLobby }: LandingScreenProps) {
   const {
     mode,
     totalRounds,
@@ -35,18 +37,36 @@ export default function LandingScreen({ onShowLeaderboard }: LandingScreenProps)
   } = useGameStore();
 
   const { identity, setShowProfilePanel } = useIdentityStore();
+  const { createRoom, joinRoom, loading: roomLoading, error: roomError } = useRoomStore();
 
   const [customRounds, setCustomRounds] = useState('');
   const [showCustom, setShowCustom] = useState(false);
 
+  // PvP sub-mode: 'choose' | 'create' | 'join'
+  const [pvpMode, setPvpMode] = useState<'choose' | 'create' | 'join'>('choose');
+  const [roomPlayers, setRoomPlayers] = useState(2);
+  const [joinCode, setJoinCode] = useState('');
+
   const handleStart = () => {
+    if (mode === 'pvp') return; // PvP handled via room buttons
     if (showCustom && customRounds) {
       const num = parseInt(customRounds);
-      if (num > 0 && num <= 100) {
-        setTotalRounds(num);
-      }
+      if (num > 0 && num <= 100) setTotalRounds(num);
     }
     setPhase('alias');
+  };
+
+  const handleCreateRoom = async () => {
+    if (!identity) return;
+    const rounds = showCustom && customRounds ? Math.min(100, Math.max(1, parseInt(customRounds) || 10)) : totalRounds;
+    await createRoom(identity.deviceId, identity.alias, roomPlayers, rounds);
+    onEnterLobby();
+  };
+
+  const handleJoinRoom = async () => {
+    if (!identity || !joinCode.trim()) return;
+    await joinRoom(joinCode.trim().toUpperCase(), identity.deviceId, identity.alias);
+    onEnterLobby();
   };
 
   return (
@@ -131,7 +151,7 @@ export default function LandingScreen({ onShowLeaderboard }: LandingScreenProps)
             {(['pvp', 'pvc'] as GameMode[]).map((m) => (
               <motion.button
                 key={m}
-                onClick={() => setMode(m)}
+                onClick={() => { setMode(m); setPvpMode('choose'); }}
                 className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border ${
                   mode === m
                     ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
@@ -140,11 +160,109 @@ export default function LandingScreen({ onShowLeaderboard }: LandingScreenProps)
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {m === 'pvp' ? '👥 Player vs Player' : '🤖 Player vs AI'}
+                {m === 'pvp' ? '👥 Multiplayer' : '🤖 Player vs AI'}
               </motion.button>
             ))}
           </div>
         </div>
+
+        {/* PvP Room Options */}
+        <AnimatePresence>
+          {mode === 'pvp' && (
+            <motion.div
+              key="pvp-panel"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3 overflow-hidden"
+            >
+              {pvpMode === 'choose' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <motion.button
+                    onClick={() => setPvpMode('create')}
+                    className="py-3 px-4 rounded-xl font-semibold text-sm bg-white/5 border border-white/10
+                      text-gray-300 hover:bg-cyan-500/10 hover:border-cyan-500/30 hover:text-cyan-400 transition-all"
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  >
+                    🎲 Create Room
+                  </motion.button>
+                  <motion.button
+                    onClick={() => setPvpMode('join')}
+                    className="py-3 px-4 rounded-xl font-semibold text-sm bg-white/5 border border-white/10
+                      text-gray-300 hover:bg-purple-500/10 hover:border-purple-500/30 hover:text-purple-400 transition-all"
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  >
+                    🔑 Join Room
+                  </motion.button>
+                </div>
+              )}
+
+              {pvpMode === 'create' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2 block">Players (2–8)</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[2,3,4,5,6,7,8].map(n => (
+                        <motion.button
+                          key={n}
+                          onClick={() => setRoomPlayers(n)}
+                          className={`py-2 px-4 rounded-xl text-sm font-semibold border transition-all ${
+                            roomPlayers === n
+                              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                              : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                          }`}
+                          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        >{n}</motion.button>
+                      ))}
+                    </div>
+                  </div>
+                  {roomError && <p className="text-red-400 text-xs">{roomError}</p>}
+                  <div className="flex gap-2">
+                    <button onClick={() => setPvpMode('choose')} className="flex-1 py-2.5 rounded-xl text-sm text-gray-500 bg-white/5 hover:bg-white/10 transition-all">← Back</button>
+                    <motion.button
+                      onClick={handleCreateRoom}
+                      disabled={roomLoading}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500 to-purple-600 text-white hover:opacity-90 transition-all disabled:opacity-50"
+                      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    >
+                      {roomLoading ? '⏳...' : '🎲 Create'}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {pvpMode === 'join' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                  <div>
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2 block">Enter Room Code</label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      placeholder="XKTR"
+                      value={joinCode}
+                      onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-xl
+                        font-mono tracking-widest text-center uppercase focus:outline-none focus:border-cyan-500/50
+                        transition-colors placeholder-gray-700"
+                    />
+                  </div>
+                  {roomError && <p className="text-red-400 text-xs">{roomError}</p>}
+                  <div className="flex gap-2">
+                    <button onClick={() => setPvpMode('choose')} className="flex-1 py-2.5 rounded-xl text-sm text-gray-500 bg-white/5 hover:bg-white/10 transition-all">← Back</button>
+                    <motion.button
+                      onClick={handleJoinRoom}
+                      disabled={roomLoading || joinCode.length < 4}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:opacity-90 transition-all disabled:opacity-50"
+                      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    >
+                      {roomLoading ? '⏳...' : '🔑 Join'}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Strategy Selector (PvC only) */}
         {mode === 'pvc' && (
@@ -225,19 +343,21 @@ export default function LandingScreen({ onShowLeaderboard }: LandingScreenProps)
           )}
         </div>
 
-        {/* Start Button */}
-        <motion.button
-          onClick={handleStart}
-          className="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600
-            text-white font-bold text-lg tracking-wide
-            hover:from-cyan-400 hover:to-purple-500
-            shadow-[0_0_30px_rgba(34,211,238,0.2)]
-            transition-all duration-300"
-          whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(34,211,238,0.3)' }}
-          whileTap={{ scale: 0.98 }}
-        >
-          🎮 Start Game
-        </motion.button>
+        {/* Start Button — only for PvC */}
+        {mode === 'pvc' && (
+          <motion.button
+            onClick={handleStart}
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600
+              text-white font-bold text-lg tracking-wide
+              hover:from-cyan-400 hover:to-purple-500
+              shadow-[0_0_30px_rgba(34,211,238,0.2)]
+              transition-all duration-300"
+            whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(34,211,238,0.3)' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            🎮 Start Game
+          </motion.button>
+        )}
 
         {/* Leaderboard Button */}
         <motion.button

@@ -47,3 +47,53 @@ model PlayerProfile {
   totalRoundsPlayed                    Int @default(0)
   badges                               String @default("[]")
 }
+
+// ============================================================
+// Multiplayer Room System
+// ============================================================
+
+model GameRoom {
+  id           String       @id @default(uuid())
+  code         String       @unique
+  hostDeviceId String
+  status       String       @default("waiting") // waiting | playing | finished
+  maxPlayers   Int          @default(2)
+  totalRounds  Int          @default(10)
+  currentRound Int          @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  players      RoomPlayer[]
+  submissions  RoundSubmission[]
+}
+
+model RoomPlayer {
+  id        String   @id @default(uuid())
+  roomId    String
+  deviceId  String
+  alias     String
+  joinedAt  DateTime @default(now())
+  isHost    Boolean  @default(false)
+  totalScore Int     @default(0)
+
+  room      GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  submissions RoundSubmission[]
+
+  @@unique([roomId, deviceId])
+}
+
+model RoundSubmission {
+  id        String   @id @default(uuid())
+  roomId    String
+  playerId  String
+  round     Int
+  move      String   // "C" or "D"
+  score     Int      @default(0)
+  submittedAt DateTime @default(now())
+
+  room      GameRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  player    RoomPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, playerId, round])
+}
+
