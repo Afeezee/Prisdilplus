@@ -22,7 +22,7 @@ plugins {
 
 def twaManifest = [
     applicationId: 'app.vercel.prisdilplus.twa',
-    hostName: 'prisdilplus.vercel.app', // The domain being opened in the TWA.
+    hostName: 'y', // The domain being opened in the TWA.
     launchUrl: 'https://prisdilplus.vercel.app/', // The start path for the TWA. Must be relative to the domain.
     name: 'Prisdil+', // The application name.
     launcherName: 'Prisdil+', // The name shown on the Android Launcher.
@@ -57,8 +57,8 @@ android {
         applicationId "app.vercel.prisdilplus.twa"
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 2
-        versionName "2"
+        versionCode 1
+        versionName "1"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name

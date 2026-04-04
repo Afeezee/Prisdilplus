@@ -17,7 +17,7 @@
         \"relation\": [\"delegate_permission/common.handle_all_urls\"],
         \"target\": {
             \"namespace\": \"web\",
-            \"site\": \"https://prisdilplus.vercel.app\"
+            \"site\": \"https://y\"
         }
     }]
     
@@ -25,8 +25,8 @@
     <string name="fallbackType" translatable="false">customtabs</string>
     <string name="fullScopeUrl" translatable="false">https://prisdilplus.vercel.app/</string>
     <string name="generatorApp" translatable="false">bubblewrap-cli</string>
-    <string name="hostName" translatable="false">prisdilplus.vercel.app</string>
-    <string name="launchUrl" translatable="false">https://prisdilplus.vercel.apphttps://prisdilplus.vercel.app/</string>
+    <string name="hostName" translatable="false">y</string>
+    <string name="launchUrl" translatable="false">https://yhttps://prisdilplus.vercel.app/</string>
     <string name="launcherName" translatable="false">Prisdil+</string>
     <string name="orientation" translatable="false">default</string>
     <string name="providerAuthority" translatable="false">app.vercel.prisdilplus.twa.fileprovider</string>
