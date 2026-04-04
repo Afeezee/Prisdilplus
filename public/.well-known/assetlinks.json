@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.prisdilplus.twa",
+      "sha256_cert_fingerprints": [
+        "F0:BE:61:27:D8:42:DD:46:11:CD:76:86:73:C1:1F:0E:F8:A6:CB:7D:C3:32:9E:3D:2F:4C:34:33:91:CC:7E:0B"
+      ]
+    }
+  }
+]
