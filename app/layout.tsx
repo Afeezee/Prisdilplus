@@ -29,6 +29,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Prisdil+",
   },
+};
+
+export const viewport = {
   themeColor: "#0a0a0f",
 };
 

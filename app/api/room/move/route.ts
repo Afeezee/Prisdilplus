@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -6,7 +7,7 @@ import { prisma } from '@/lib/prisma';
  * Preserves original 2-player payoff as a special case.
  *
  * Cooperator score = 3 - (number of defectors in group)
- *   → clamped to minimum of 0
+ *   â†’ clamped to minimum of 0
  * Defector score = 5 if any cooperator exists, else 1 (all-defect)
  */
 function computeScores(moves: { playerId: string; move: string }[]): Map<string, number> {

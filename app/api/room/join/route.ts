@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     // Check if already in room
     const alreadyIn = room.players.find(p => p.deviceId === deviceId);
     if (alreadyIn) {
-      // Already joined — just return the room
+      // Already joined â€” just return the room
       return NextResponse.json({ room });
     }
 
