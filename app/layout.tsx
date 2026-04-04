@@ -23,6 +23,13 @@ export const metadata: Metadata = {
     "cooperation",
     "behavioural analysis",
   ],
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Prisdil+",
+  },
+  themeColor: "#0a0a0f",
 };
 
 export default function RootLayout({
@@ -35,6 +42,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-[#0a0a0f] text-white">
         {children}
       </body>
