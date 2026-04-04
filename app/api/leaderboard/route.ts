@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { PlayerProfile as PlayerProfileType } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const profiles = await prisma.playerProfile.findMany({
     include: { user: true },
