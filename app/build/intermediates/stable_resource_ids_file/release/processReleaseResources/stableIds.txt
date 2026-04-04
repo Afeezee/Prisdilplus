@@ -257,7 +257,6 @@ app.vercel.prisdilplus.twa:string/abc_menu_delete_shortcut_label = 0x7f0e000a
 app.vercel.prisdilplus.twa:string/abc_menu_ctrl_shortcut_label = 0x7f0e0009
 app.vercel.prisdilplus.twa:string/abc_capital_on = 0x7f0e0007
 app.vercel.prisdilplus.twa:string/abc_activitychooserview_choose_application = 0x7f0e0005
-app.vercel.prisdilplus.twa:raw/web_app_manifest = 0x7f0d0002
 app.vercel.prisdilplus.twa:raw/com_android_billingclient_registration_info = 0x7f0d0001
 app.vercel.prisdilplus.twa:raw/com_android_billingclient_heterodyne_info = 0x7f0d0000
 app.vercel.prisdilplus.twa:layout/support_simple_spinner_dropdown_item = 0x7f0b002a

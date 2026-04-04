@@ -15,7 +15,6 @@ drawable shortcut_legacy_background
 drawable splash
 integer splashScreenFadeOutDuration
 mipmap ic_launcher
-raw web_app_manifest
 string appName
 string assetStatements
 string fallbackType
