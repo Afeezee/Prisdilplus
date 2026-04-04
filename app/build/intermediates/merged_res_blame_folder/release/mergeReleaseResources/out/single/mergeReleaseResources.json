@@ -56,6 +56,10 @@
         "source": "app.vercel.prisdilplus.twa.app-main-30:/mipmap-xxhdpi/ic_launcher.png"
     },
     {
+        "merged": "app.vercel.prisdilplus.twa.app-release-29:/raw_web_app_manifest.json.flat",
+        "source": "app.vercel.prisdilplus.twa.app-main-30:/raw/web_app_manifest.json"
+    },
+    {
         "merged": "app.vercel.prisdilplus.twa.app-release-29:/drawable-hdpi_ic_notification_icon.png.flat",
         "source": "app.vercel.prisdilplus.twa.app-main-30:/drawable-hdpi/ic_notification_icon.png"
     },
