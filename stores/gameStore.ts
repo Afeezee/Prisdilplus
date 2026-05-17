@@ -63,7 +63,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   phase: 'landing',
   mode: 'pvc',
   totalRounds: 10,
-  strategy: 'tit_for_tat',
+  strategy: 'random',
   player1Alias: '',
   player2Alias: '',
 
