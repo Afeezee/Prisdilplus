@@ -12,7 +12,7 @@ export default function PlayersTab() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   useEffect(() => {
-    setPlayers(getAllPlayers());
+    getAllPlayers().then(setPlayers);
   }, []);
 
   const filteredPlayers = useMemo(() => {

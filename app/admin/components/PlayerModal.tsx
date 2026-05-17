@@ -18,7 +18,7 @@ export default function PlayerModal({ player, onClose }: PlayerModalProps) {
 
   useEffect(() => {
     if (player) {
-      setSessions(getPlayerSessions(player.alias));
+      getPlayerSessions(player.alias).then(setSessions);
     }
   }, [player]);
 

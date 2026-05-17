@@ -18,9 +18,17 @@ export default function OverviewTab() {
   const [coopData, setCoopData] = useState<any[]>([]);
 
   useEffect(() => {
-    setMetrics(getOverviewMetrics());
-    setProfileData(getProfileDistribution());
-    setCoopData(getCooperationOverTime());
+    async function loadData() {
+      const [m, p, c] = await Promise.all([
+        getOverviewMetrics(),
+        getProfileDistribution(),
+        getCooperationOverTime(),
+      ]);
+      setMetrics(m);
+      setProfileData(p);
+      setCoopData(c);
+    }
+    loadData();
   }, []);
 
   if (!metrics) {

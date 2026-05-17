@@ -17,7 +17,7 @@ export default function ExportTab() {
   const [counts, setCounts] = useState({ players: 0, sessions: 0, rounds: 0 });
 
   useEffect(() => {
-    setCounts(getExportCounts());
+    getExportCounts().then(setCounts);
   }, []);
 
   const showToast = (message: string) => {
@@ -25,10 +25,10 @@ export default function ExportTab() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const handleExport = (exportFn: () => number, name: string) => {
+  const handleExport = async (exportFn: () => Promise<number>, name: string) => {
     setExporting(name);
     try {
-      const rowCount = exportFn();
+      const rowCount = await exportFn();
       showToast(`✅ Successfully exported ${rowCount} rows — ${name}`);
     } catch (error) {
       console.error('Export error:', error);

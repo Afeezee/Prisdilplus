@@ -25,10 +25,19 @@ export default function RoundAnalysisTab() {
   const [retLatency, setRetLatency] = useState([]);
 
   useEffect(() => {
-    setMoveFreq(getMoveFrequencies());
-    setRoundPosition(getRoundPositionAnalysis());
-    setFirstMove(getFirstMoveAnalysis());
-    setRetLatency(getRetaliationLatency());
+    async function loadData() {
+      const [mf, rp, fm, rl] = await Promise.all([
+        getMoveFrequencies(),
+        getRoundPositionAnalysis(),
+        getFirstMoveAnalysis(),
+        getRetaliationLatency(),
+      ]);
+      setMoveFreq(mf);
+      setRoundPosition(rp);
+      setFirstMove(fm);
+      setRetLatency(rl);
+    }
+    loadData();
   }, []);
 
   const hasData = moveFreq.some((m) => m.count > 0);

@@ -34,10 +34,19 @@ export default function BehaviouralInsightsTab() {
   const [aiImpact, setAIImpact] = useState<any[]>([]);
 
   useEffect(() => {
-    setDistributions(getMetricsDistribution());
-    setCorrelation(getCorrelationMatrix());
-    setProfileBreakdown(getProfileBreakdown());
-    setAIImpact(getAIStrategyImpact());
+    async function loadData() {
+      const [d, c, pb, ai] = await Promise.all([
+        getMetricsDistribution(),
+        getCorrelationMatrix(),
+        getProfileBreakdown(),
+        getAIStrategyImpact(),
+      ]);
+      setDistributions(d);
+      setCorrelation(c);
+      setProfileBreakdown(pb);
+      setAIImpact(ai);
+    }
+    loadData();
   }, []);
 
   const hasData = profileBreakdown.length > 0;

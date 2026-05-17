@@ -13,7 +13,7 @@ export default function SessionsTab() {
   const [selectedSession, setSelectedSession] = useState(null);
 
   useEffect(() => {
-    setSessions(getAllSessions());
+    getAllSessions().then(setSessions);
   }, []);
 
   // Get unique AI strategies for filter

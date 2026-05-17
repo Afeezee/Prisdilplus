@@ -94,35 +94,30 @@ export default function ResultsDashboard({ onShowLeaderboard }: ResultsDashboard
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved]);
 
-  // Save game session to localStorage
   const saveGameSession = () => {
     if (typeof window === 'undefined') return;
 
-    try {
-      const sessionData = {
-        sessionId: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
-        gameMode: mode === 'pvp' ? 'PvP' : 'PvAI',
-        playerAlias: resolvedP1Alias,
-        opponentAlias: player2Alias,
-        opponentType: mode === 'pvp' ? 'human' : 'ai',
-        aiStrategy: mode === 'pvc' ? strategy : null,
-        totalRounds: rounds.length,
-        playerTotalScore: player1Score,
-        opponentTotalScore: player2Score,
-        winner: winner === 'player1' ? resolvedP1Alias : winner === 'player2' ? player2Alias : 'tie',
-        playerBehaviouralProfile: player1Profile.title,
-        playerMetrics: player1Metrics,
-        roundHistory: rounds,
-      };
+    const sessionData = {
+      gameMode: mode === 'pvp' ? 'PvP' : 'PvAI',
+      playerAlias: resolvedP1Alias,
+      playerDeviceId: identity?.deviceId || null,
+      opponentAlias: player2Alias,
+      opponentType: mode === 'pvp' ? 'human' : 'ai',
+      aiStrategy: mode === 'pvc' ? strategy : null,
+      totalRounds: rounds.length,
+      playerTotalScore: player1Score,
+      opponentTotalScore: player2Score,
+      winner: winner === 'player1' ? resolvedP1Alias : winner === 'player2' ? player2Alias : 'tie',
+      playerBehaviouralProfile: player1Profile.title,
+      playerMetrics: player1Metrics,
+      roundHistory: rounds,
+    };
 
-      const existingSessions = localStorage.getItem('prisdilplus_game_sessions');
-      const sessions = existingSessions ? JSON.parse(existingSessions) : [];
-      sessions.push(sessionData);
-      localStorage.setItem('prisdilplus_game_sessions', JSON.stringify(sessions));
-    } catch (error) {
-      console.warn('Prisdil+: Could not save game session data', error);
-    }
+    fetch('/api/session/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sessionData),
+    }).catch(() => console.warn('Prisdil+: Could not save session to database'));
   };
 
   if (!player1Metrics || !player2Metrics || !player1Profile || !player2Profile) {

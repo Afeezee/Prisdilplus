@@ -49,6 +49,45 @@ model PlayerProfile {
 }
 
 // ============================================================
+// Game Session History (PvAI + PvP — used by admin dashboard)
+// ============================================================
+
+model GameSession {
+  id                       String   @id @default(uuid())
+  timestamp                DateTime @default(now())
+  gameMode                 String   // "PvAI" or "PvP"
+  playerAlias              String
+  playerDeviceId           String?
+  opponentAlias            String
+  opponentType             String   // "human" or "ai"
+  aiStrategy               String?
+  totalRounds              Int
+  playerTotalScore         Int
+  opponentTotalScore       Int
+  winner                   String   // player alias or "tie"
+  playerBehaviouralProfile String?
+  playerMetrics            String?  // JSON string of metrics
+
+  rounds                   SessionRound[]
+}
+
+model SessionRound {
+  id                       String      @id @default(uuid())
+  sessionId                String
+  round                    Int
+  playerMove               String      // "C" or "D"
+  opponentMove             String      // "C" or "D"
+  playerScore              Int
+  opponentScore            Int
+  cumulativePlayerScore    Int
+  cumulativeOpponentScore  Int
+
+  session                  GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, round])
+}
+
+// ============================================================
 // Multiplayer Room System
 // ============================================================
 
