@@ -15,15 +15,19 @@ export async function POST(request: Request) {
     });
 
     if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
-    if (room.status !== 'waiting') return NextResponse.json({ error: 'Game already started' }, { status: 400 });
-    if (room.players.length >= room.maxPlayers) return NextResponse.json({ error: 'Room is full' }, { status: 400 });
 
-    // Check if already in room
+    // If this device is already a member, always let it back in (reconnect /
+    // double-tap / poll-retry safe). This must be checked BEFORE the capacity
+    // and status checks, otherwise an existing player re-joining a full or
+    // already-started room is falsely rejected with "Room is full".
     const alreadyIn = room.players.find(p => p.deviceId === deviceId);
     if (alreadyIn) {
-      // Already joined â€” just return the room
       return NextResponse.json({ room });
     }
+
+    // New joiner constraints
+    if (room.status !== 'waiting') return NextResponse.json({ error: 'Game already started' }, { status: 400 });
+    if (room.players.length >= room.maxPlayers) return NextResponse.json({ error: 'Room is full' }, { status: 400 });
 
     const updated = await prisma.gameRoom.update({
       where: { id: room.id },

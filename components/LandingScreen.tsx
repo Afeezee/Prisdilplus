@@ -60,13 +60,19 @@ export default function LandingScreen({ onShowLeaderboard, onEnterLobby }: Landi
     if (!identity) return;
     const rounds = showCustom && customRounds ? Math.min(100, Math.max(1, parseInt(customRounds) || 10)) : totalRounds;
     await createRoom(identity.deviceId, identity.alias, roomPlayers, rounds);
-    onEnterLobby();
+    // Only enter the lobby if the room was actually created — otherwise stay
+    // on this screen so the error is shown instead of a broken empty lobby.
+    const { error, roomId } = useRoomStore.getState();
+    if (!error && roomId) onEnterLobby();
   };
 
   const handleJoinRoom = async () => {
     if (!identity || !joinCode.trim()) return;
     await joinRoom(joinCode.trim().toUpperCase(), identity.deviceId, identity.alias);
-    onEnterLobby();
+    // Only enter the lobby if the join succeeded; otherwise the error stays
+    // visible here (e.g. "Room is full", "Room not found").
+    const { error, roomId } = useRoomStore.getState();
+    if (!error && roomId) onEnterLobby();
   };
 
   return (

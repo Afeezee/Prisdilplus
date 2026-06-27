@@ -18,6 +18,7 @@ export default function MultiplayerGameBoard({ onGameEnd }: MultiplayerGameBoard
     currentRound,
     totalRounds,
     mySubmittedThisRound,
+    myDefectLocked,
     submittedCount,
     revealedSubmissions,
     roomStatus,
@@ -104,6 +105,11 @@ export default function MultiplayerGameBoard({ onGameEnd }: MultiplayerGameBoard
           </div>
         </div>
 
+        {/* Standing rule reminder */}
+        <p className="text-center text-[11px] text-gray-600">
+          📜 Rule: no more than <span className="text-amber-500/80">two Defects in a row</span>
+        </p>
+
         {/* Reveal Panel */}
         <AnimatePresence mode="wait">
           {showReveal && revealedSubmissions.length > 0 && (
@@ -169,6 +175,17 @@ export default function MultiplayerGameBoard({ onGameEnd }: MultiplayerGameBoard
                 className="space-y-3"
               >
                 <p className="text-center text-gray-400 text-sm">Choose your move — others can&apos;t see it yet</p>
+                {myDefectLocked && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-center gap-2 text-amber-400 text-xs font-semibold
+                      bg-amber-500/10 border border-amber-500/30 rounded-xl py-2 px-3"
+                  >
+                    <span>✋</span>
+                    <span>You&apos;ve defected twice in a row — you must cooperate this round.</span>
+                  </motion.div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <motion.button
                     onClick={() => handleSubmit('C')}
@@ -182,15 +199,19 @@ export default function MultiplayerGameBoard({ onGameEnd }: MultiplayerGameBoard
                     <span className="text-gray-600 text-xs">Trust the group</span>
                   </motion.button>
                   <motion.button
-                    onClick={() => handleSubmit('D')}
-                    className="py-8 rounded-2xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20
-                      transition-all flex flex-col items-center gap-2 group"
-                    whileHover={{ scale: 1.03, boxShadow: '0 0 30px rgba(239,68,68,0.2)' }}
-                    whileTap={{ scale: 0.97 }}
+                    onClick={() => { if (!myDefectLocked) handleSubmit('D'); }}
+                    disabled={myDefectLocked}
+                    className={`py-8 rounded-2xl border transition-all flex flex-col items-center gap-2 group ${
+                      myDefectLocked
+                        ? 'bg-white/5 border-white/10 opacity-40 cursor-not-allowed'
+                        : 'bg-red-500/10 border-red-500/30 hover:bg-red-500/20'
+                    }`}
+                    whileHover={myDefectLocked ? {} : { scale: 1.03, boxShadow: '0 0 30px rgba(239,68,68,0.2)' }}
+                    whileTap={myDefectLocked ? {} : { scale: 0.97 }}
                   >
-                    <span className="text-4xl">🗡️</span>
+                    <span className="text-4xl">{myDefectLocked ? '🔒' : '🗡️'}</span>
                     <span className="text-red-400 font-bold text-sm">Defect</span>
-                    <span className="text-gray-600 text-xs">Betray the group</span>
+                    <span className="text-gray-600 text-xs">{myDefectLocked ? 'Locked this round' : 'Betray the group'}</span>
                   </motion.button>
                 </div>
               </motion.div>

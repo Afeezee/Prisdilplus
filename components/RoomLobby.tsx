@@ -124,6 +124,19 @@ export default function RoomLobby({ onBack }: RoomLobbyProps) {
           </div>
         </div>
 
+        {/* Standing rule — shown to all players before the game starts */}
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">📜</span>
+            <h3 className="text-sm font-bold text-amber-400">Game Rule</h3>
+          </div>
+          <p className="text-gray-400 text-xs leading-relaxed">
+            No player may select <span className="text-red-400 font-semibold">Defect</span> more than
+            twice in a row. After two consecutive defections, you must cooperate the next round before
+            you can defect again. This keeps the game fair and fun.
+          </p>
+        </div>
+
         {error && (
           <p className="text-red-400 text-sm text-center">{error}</p>
         )}

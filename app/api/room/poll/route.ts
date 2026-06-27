@@ -39,6 +39,15 @@ export async function GET(request: Request) {
     // How many have submitted for current round
     const submittedCount = room.submissions.filter(s => s.round === room.currentRound).length;
 
+    // Standing rule enforcement: lock Defect when this player has defected in
+    // both of the two previous rounds (a third consecutive defect is not allowed).
+    let myDefectLocked = false;
+    if (player && room.currentRound > 2) {
+      const prev1 = room.submissions.find(s => s.playerId === player.id && s.round === room.currentRound - 1);
+      const prev2 = room.submissions.find(s => s.playerId === player.id && s.round === room.currentRound - 2);
+      myDefectLocked = prev1?.move === 'D' && prev2?.move === 'D';
+    }
+
     return NextResponse.json({
       room: {
         id: room.id,
@@ -58,6 +67,7 @@ export async function GET(request: Request) {
       })),
       myPlayerId: player?.id ?? null,
       mySubmittedThisRound: !!mySubmission,
+      myDefectLocked,
       submittedCount,
       revealedSubmissions: revealedSubmissions.map(s => ({
         playerId: s.playerId,

@@ -37,6 +37,7 @@ export interface RoomState {
 
   // Per-round state
   mySubmittedThisRound: boolean;
+  myDefectLocked: boolean;
   submittedCount: number;
   revealedSubmissions: RevealedSubmission[];
 
@@ -70,6 +71,7 @@ const initialState = {
   myPlayerId: null,
   myDeviceId: null,
   mySubmittedThisRound: false,
+  myDefectLocked: false,
   submittedCount: 0,
   revealedSubmissions: [],
   error: null,
@@ -199,6 +201,7 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         players: data.players,
         myPlayerId: data.myPlayerId,
         mySubmittedThisRound: data.mySubmittedThisRound,
+        myDefectLocked: data.myDefectLocked ?? false,
         submittedCount: data.submittedCount,
         revealedSubmissions: data.revealedSubmissions,
       });

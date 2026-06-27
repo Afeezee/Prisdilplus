@@ -42,6 +42,23 @@ export async function POST(request: Request) {
     const player = room.players.find(p => p.deviceId === deviceId);
     if (!player) return NextResponse.json({ error: 'Not in room' }, { status: 403 });
 
+    // Standing rule: no player may defect more than twice in succession.
+    // If the player defected in BOTH of the two previous rounds, a third
+    // consecutive defection is rejected (they must cooperate this round).
+    if (move === 'D' && room.currentRound > 2) {
+      const prev = await prisma.roundSubmission.findMany({
+        where: { roomId, playerId: player.id, round: { in: [room.currentRound - 1, room.currentRound - 2] } },
+      });
+      const r1 = prev.find(s => s.round === room.currentRound - 1);
+      const r2 = prev.find(s => s.round === room.currentRound - 2);
+      if (r1?.move === 'D' && r2?.move === 'D') {
+        return NextResponse.json(
+          { error: 'You cannot defect more than twice in a row. You must cooperate this round.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Upsert submission (idempotent)
     await prisma.roundSubmission.upsert({
       where: { roomId_playerId_round: { roomId, playerId: player.id, round: room.currentRound } },
